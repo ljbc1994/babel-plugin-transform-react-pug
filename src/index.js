@@ -49,7 +49,7 @@ export default function(babel) {
           const ast = parsePug(src);
           const context = Context.create(this.file, path, interpolationRef);
           const transformed = ast.nodes.map(node =>
-            visitExpression(node, context),
+            visitExpression(node, context, true),
           );
 
           const expression =

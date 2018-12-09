@@ -3,6 +3,13 @@
 import type Context from './context';
 import t, {setCurrentLocation} from './lib/babel-types';
 import visitors from './lib/visitors.js';
+import {buildJSXFragment} from './utils/jsx';
+
+const WRAP_NODE_TYPE = ['Each', 'Conditonal', 'While', 'Case'];
+
+function requiresFragmentWrap(nodeType: string) {
+  return WRAP_NODE_TYPE.some(type => nodeType === type);
+}
 
 export function visitExpressions(
   nodes: Object[],
@@ -18,15 +25,27 @@ export function visitExpressions(
   });
   return result;
 }
-export function visitExpression(node: Object, context: Context): Expression {
+
+export function visitExpression(
+  node: Object,
+  context: Context,
+  rootNode?: boolean,
+): Expression {
   const line = node.line + context.getBaseLine();
   setCurrentLocation({start: {line, column: 0}, end: {line, column: 0}});
   const v = visitors[node.type];
   if (!v) {
     throw new Error(node.type + ' is not yet supported');
   }
-  return v.expression(node, context);
+  const exp = v.expression(node, context);
+
+  if (rootNode && requiresFragmentWrap(node.type)) {
+    return buildJSXFragment([t.jSXExpressionContainer(exp)]);
+  }
+
+  return exp;
 }
+
 export function visitJsxExpressions(
   nodes: Object[],
   context: Context,
